@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com._520it.wms.mapper.ProductStockMapper">
+  <resultMap id="BaseResultMap" type="com._520it.wms.domain.ProductStock">
+    <id column="id" property="id" />
+    <result column="price" property="price" />
+    <result column="storeNumber" property="storeNumber" />
+    <result column="amount" property="amount" />
+    <association columnPrefix="p_" javaType="Product" property="product">
+    	<id column="id" property="id" />
+    	<result column="name" property="name" />
+    	<result column="brandName" property="brandName" />
+    	<result column="sn" property="sn" />
+    </association>
+    <association columnPrefix="d_" javaType="Depot" property="depot">
+    	<id column="id" property="id" />
+    	<result column="name" property="name" />
+    </association>
+  </resultMap>
+  <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+    insert into `productstock` (price, storeNumber, amount, product_id, depot_id)
+    values (#{price}, #{storeNumber}, #{amount}, #{product.id}, #{depot.id})
+  </insert>
+  <update id="updateByPrimaryKey">
+    update `productstock`
+    set price = #{price},
+      storeNumber = #{storeNumber},
+      amount = #{amount},
+      product_id = #{product.id},
+      depot_id = #{depot.id}
+    where id = #{id}
+  </update>
+
+  <sql id="base_where">
+    <where>
+      <if test="keyword!=null">
+        and (p.name like concat('%',#{keyword},'%') or p.sn like concat('%',#{keyword},'%'))
+      </if>
+      <if test="depotId>0">
+        and d.id = #{depotId}
+      </if>
+      <if test="brandId>0">
+        and p.brand_id=#{brandId}
+      </if>
+      <if test="maxNumber!=null">
+        storeNumber &lt;= #{maxNumber}
+      </if>
+    </where>
+  </sql>
+
+  <select id="queryForList" resultMap="BaseResultMap">
+    select ps.id, ps.price, ps.storeNumber, ps.amount, 
+    p.id as p_id,p.name as p_name,p.sn as p_sn,p.brandName as p_brandName, p.brand_id as p_brandId,
+    d.id as d_id,d.name as d_name
+    from `productstock` ps
+    join product p on ps.product_id=p.id
+    join depot d on ps.depot_id=d.id
+    <include refid="base_where"/>
+  </select>
+  <select id="selectByProductAndDepot" resultMap="BaseResultMap">
+  	select ps.id, ps.price, ps.storeNumber, ps.amount, 
+    p.id as p_id,p.name as p_name,
+    d.id as d_id,d.name as d_name
+    from `productstock` ps
+    join product p on ps.product_id=p.id
+    join depot d on ps.depot_id=d.id 
+    where p.id=#{productId} and d.id=#{depotId}
+  </select>
+</mapper>

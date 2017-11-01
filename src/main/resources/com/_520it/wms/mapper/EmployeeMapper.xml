@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com._520it.wms.mapper.EmployeeMapper" >
+  <resultMap id="BaseResultMap" type="com._520it.wms.domain.Employee" >
+    <id column="id" property="id" />
+    <result column="name" property="name" />
+    <result column="password" property="password" />
+    <result column="email" property="email" />
+    <result column="age" property="age" />
+    <result column="admin" property="admin" />
+    <association property="dept" javaType="Department">
+    	<id property="id" column="d_id"/>
+    	<result property="name" column="d_name"/>
+    </association>
+	<collection property="roles" ofType="Role"
+	 	column="id" select="com._520it.wms.mapper.RoleMapper.selectRoleByEmployeeId"/> 
+	</resultMap>
+  <delete id="deleteByPrimaryKey" >
+    delete from `employee`
+    where id = #{id}
+  </delete>
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id" >
+    insert into `employee` (name, password, email, age, admin, dept_id)
+    values (#{name}, #{password}, #{email}, #{age}, #{admin}, #{dept.id})
+  </insert>
+  <update id="updateByPrimaryKey" >
+    update `employee`
+    set name = #{name},
+      email = #{email},
+      age = #{age},
+      admin = #{admin},
+      dept_id = #{dept.id}
+    where id = #{id}
+  </update>
+  <sql id="base_column">
+  	e.id, e.name, e.password, e.email, e.age, e.admin, e.dept_id,
+	d.id  d_id , d.name  d_name
+  </sql>
+  <sql id="base_table">
+  	employee e LEFT JOIN department d ON e.dept_id=d.id
+  </sql>
+  <sql id="base_where">
+ 	 <where>
+	  	<if test="keyword != null">
+	  		and (e.name like concat('%',#{keyword},'%') or e.email like concat('%',#{keyword},'%'))
+	  	</if>
+	  	<if test="deptId > 0">
+	  		and e.dept_id = #{deptId}
+	  	</if>
+  	 </where>
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+    select <include refid="base_column"/>
+	from <include refid="base_table"/>
+	where e.id = #{id}
+  </select>
+  <select id="queryForCount" resultType="int">
+  	select count(e.id)
+	from <include refid="base_table"/>
+	<include refid="base_where"/>
+  </select>
+  <select id="queryForList" resultMap="BaseResultMap" >
+    select <include refid="base_column"/>
+	from <include refid="base_table"/>
+	<include refid="base_where"/>
+	limit #{startIndex},#{pageSize}
+  </select>
+  <insert id="insertRelationWithRole">
+  	insert into employee_role(employee_id,role_id)values(#{employeeId},#{roleId})
+  </insert>
+  <delete id="deleteRelationWithRole">
+  	delete from employee_role where employee_id=#{employeeId}
+  </delete>
+  <select id="selectEmployeeByUsernameAndPassword" resultType="Employee">
+  	select id,name,password,email,age,admin from employee where name=#{username} and password=#{password}
+  </select>
+  <select id="selectExpressionByEmployeeId" resultType="string">
+  	select p.expression
+	from employee_role er JOIN role_permission rp
+	ON er.role_id=rp.role_id JOIN permission p ON rp.permission_id=p.id
+	where er.employee_id=#{employeeId} 
+  </select>
+  <delete id="batchDelete">
+  	delete from employee where id in
+  	<foreach collection="ids" open="(" close=")" separator="," item="id">
+  		#{id}
+  	</foreach>
+  </delete>
+</mapper>

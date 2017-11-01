@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com._520it.wms.mapper.OrderBillMapper" >
+  <resultMap id="BaseResultMap" type="com._520it.wms.domain.OrderBill">
+    <id column="id" property="id" />
+    <result column="sn" property="sn" />
+    <result column="vdate" property="vdate" />
+    <result column="status" property="status" />
+    <result column="totalAmount" property="totalAmount" />
+    <result column="totalNumber" property="totalNumber" />
+    <result column="auditTime" property="auditTime" />
+    <result column="inputTime" property="inputTime" />
+    <association property="inputUser" javaType="Employee" columnPrefix="iu_">
+    	<id column="id" property="id"/>
+    	<result column="name" property="name"/>
+    </association>
+    <association property="auditor" javaType="Employee" columnPrefix="au_">
+    	<id column="id" property="id"/>
+    	<result column="name" property="name"/>
+    </association>
+    <association property="supplier" javaType="Supplier" columnPrefix="s_">
+    	<id column="id" property="id"/> 
+    	<result column="name" property="name"/>
+    </association>
+    <collection property="items" ofType="OrderBillItem"
+    	select="com._520it.wms.mapper.OrderBillItemMapper.selectByBillId" column="id"
+    />
+    	
+  </resultMap>
+  <delete id="deleteByPrimaryKey"  >
+    delete from `orderbill`
+    where id = #{id}
+  </delete>
+  <insert id="insert"  useGeneratedKeys="true" keyProperty="id" >
+    insert into `orderbill` (sn, vdate, status, totalAmount, totalNumber, auditTime, 
+      inputTime, inputUser_id, auditor_id, supplier_id)
+    values (#{sn}, #{vdate}, #{status}, #{totalAmount}, #{totalNumber}, #{auditTime}, 
+      #{inputTime}, #{inputUser.id}, #{auditor.id}, #{supplier.id})
+  </insert>
+  <update id="updateByPrimaryKey" >
+    update `orderbill`
+    set sn = #{sn},
+      vdate = #{vdate},
+      status = #{status},
+      totalAmount = #{totalAmount},
+      totalNumber = #{totalNumber},
+      auditTime = #{auditTime},
+      inputTime = #{inputTime},
+      inputUser_id = #{inputUser.id},
+      auditor_id = #{auditor.id},
+      supplier_id = #{supplier.id}
+    where id = #{id}
+  </update>
+  <sql id="base_column">
+  	bill.id, bill.sn, bill.vdate, bill.status, bill.totalAmount, bill.totalNumber, bill.auditTime, bill.inputTime, 
+		s.id as s_id  , s.name as s_name,
+    	iu.id as iu_id, iu.name as iu_name,
+		au.id as au_id, au.name as au_name
+  </sql>
+  <sql id="base_table">
+  	`orderbill` bill 
+    	join supplier s on bill.supplier_id=s.id 
+    	join employee iu on bill.inputUser_id=iu.id
+    	left join employee au on bill.auditor_id=au.id
+  </sql>
+  <sql id="base_where">
+  	<where>
+  		<if test="beginDate!=null">
+  			and vdate >= #{beginDate}
+  		</if>
+  		<if test="endDate!=null">
+  			and vdate &lt;=#{endDate}
+  		</if>
+  		<if test="supplierId>0">
+  			and supplier_id=#{supplierId}
+  		</if>
+  		<if test="status>=0">
+  			and status = #{status}
+  		</if>
+  	</where>
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" >
+    select <include refid="base_column"/>
+    from <include refid="base_table"/>
+    where bill.id = #{id}
+  </select>
+  <select id="selectAll" resultMap="BaseResultMap" >
+    select <include refid="base_column"/>
+    from <include refid="base_table"/>
+  </select>
+  <select id="queryForList" resultMap="BaseResultMap">
+  	select <include refid="base_column"/>
+  	from <include refid="base_table"/>
+  	<include refid="base_where"/>
+  	limit #{startIndex},#{pageSize}
+  </select>
+  <select id="queryForCount" resultType="int">
+  	select count(bill.id) from <include refid="base_table"/>
+  	<include refid="base_where"/>
+  </select>
+</mapper>

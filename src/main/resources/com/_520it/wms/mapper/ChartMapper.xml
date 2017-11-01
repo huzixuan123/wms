@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com._520it.wms.mapper.ChartMapper">
+
+  <sql id="base_where">
+    <where>
+      <if test="beginDate!=null">
+        and bill.vdate >= #{beginDate}
+      </if>
+      <if test="endDate!=null">
+        and bill.vdate &lt;= #{endDate}
+      </if>
+      <if test="keyword!=null">
+        and p.name like concat('%',#{keyword},'%')
+      </if>
+      <if test="supplierId>-1">
+        and s.id=#{supplierId}
+      </if>
+      <if test="brandId>-1">
+        and p.brand_id=#{brandId}
+      </if>
+      and bill.status=1
+    </where>
+  </sql>
+  <sql id="base_sale">
+    <where>
+      <if test="beginDate!=null">
+        and sa.vdate >= #{beginDate}
+      </if>
+      <if test="endDate!=null">
+        and sa.vdate &lt;= #{endDate}
+      </if>
+      <if test="keyword!=null">
+        and p.name like concat('%',#{keyword},'%')
+      </if>
+      <if test="clientId>-1">
+        and c.id=#{clientId}
+      </if>
+      <if test="brandId>-1">
+        and p.brand_id=#{brandId}
+      </if>
+    </where>
+  </sql>
+  <select id="queryOrderChart" resultType="map">
+    select ${groupBy} AS groupType,
+    sum(item.number) AS totalNumber,
+    sum(item.amount) AS  totalAmount
+    from `orderbill` bill
+    join supplier s on bill.supplier_id=s.id
+    join employee iu on bill.inputUser_id=iu.id
+    JOIN orderbillitem item ON  bill.id=item.bill_id
+    JOIN  product p on p.id = item.product_id
+    <include refid="base_where"/>
+    GROUP BY ${groupBy}
+  </select>
+  <select id="querySaleChart" resultType="map">
+    select
+    ${groupBy} AS groupType,
+    sum(sa.number) AS totalNumber,
+    sum(sa.saleAmount) AS totalAmount,
+    sum(sa.saleAmount-sa.costAmount) AS grossProfit
+    from saleaccount sa
+    JOIN Employee e ON sa.saleman_id=e.id
+    JOIN product p on p.id=sa.product_id
+    JOIN client c ON c.id=sa.client_id
+    <include refid="base_sale"/>
+    GROUP BY  ${groupBy}
+  </select>
+</mapper>
